@@ -3,7 +3,7 @@ import math
 
 # функция по отрисовыванию изображения
 def image_proc():
-    img = cv2.imread('C:\\Users\\anapa\\Downloads\\img_test.jpg')
+    img = cv2.imread('img_test.jpg')
 
     # Поворот
     # w, h = img.shape[:2]
@@ -29,7 +29,7 @@ def image_proc():
 
 # Вывод видео
 def video_proc():
-    cap = cv2.VideoCapture('C:\\Users\\anapa\\Downloads\\sample.mp4')
+    cap = cv2.VideoCapture('sample.mp4')
 
     #инициализация переменной расстояния
     dist = 0
@@ -60,9 +60,9 @@ def video_proc():
             c = max(contours, key=cv2.contourArea)
             x, y, w, h = cv2.boundingRect(c)
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-
+            WIDTH, HEIGHT = frame.shape[:2]
            #формула расстояния
-        dist = math.sqrt((x-320)*(x-320)+(y-240)*(y-240))
+            dist = math.ceil(math.sqrt((x-WIDTH/2)*(x-WIDTH/2)+(y-HEIGHT/2)*(y-HEIGHT/2)))
 
         #использую функцию для отображения на кадрах расстояния
         cv2.putText(frame, str(dist), (10, 400), cv2.FONT_HERSHEY_SIMPLEX,
