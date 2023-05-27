@@ -1,0 +1,82 @@
+import pyttsx3
+import pyaudio
+import vosk
+import time
+import json
+
+# Данные
+data_string = '[{"date":"2020-01-01","localName":"New Years Day","name":"New Years Day","countryCode":"GB","fixed":false,"global":true,"counties":null,"launchYear":null,"type":"Public"},{"date":"2020-01-02","localName":"New Years Day","name":"New Years Day","countryCode":"GB","fixed":false,"global":false,"counties":["GB-SCT"],"launchYear":null,"type":"Public"},{"date":"2020-03-17","localName":"Saint Patricks Day","name":"Saint Patricks Day","countryCode":"GB","fixed":true,"global":false,"counties":["GB-NIR"],"launchYear":null,"type":"Public"},{"date":"2020-04-10","localName":"Good Friday","name":"Good Friday","countryCode":"GB","fixed":false,"global":true,"counties":null,"launchYear":null,"type":"Public"},{"date":"2020-04-13","localName":"Easter Monday","name":"Easter Monday","countryCode":"GB","fixed":false,"global":false,"counties":["GB-ENG","GB-WLS","GB-NIR"],"launchYear":null,"type":"Public"},{"date":"2020-05-08","localName":"Early May Bank Holiday","name":"Early May Bank Holiday","countryCode":"GB","fixed":false,"global":true,"counties":null,"launchYear":1978,"type":"Public"},{"date":"2020-05-25","localName":"Spring Bank Holiday","name":"Spring Bank Holiday","countryCode":"GB","fixed":false,"global":true,"counties":null,"launchYear":1971,"type":"Public"},{"date":"2020-07-12","localName":"Battle of the Boyne","name":"Battle of the Boyne","countryCode":"GB","fixed":true,"global":false,"counties":["GB-NIR"],"launchYear":null,"type":"Public"},{"date":"2020-08-03","localName":"Summer Bank Holiday","name":"Summer Bank Holiday","countryCode":"GB","fixed":false,"global":false,"counties":["GB-SCT"],"launchYear":1971,"type":"Public"},{"date":"2020-08-31","localName":"Summer Bank Holiday","name":"Summer Bank Holiday","countryCode":"GB","fixed":false,"global":false,"counties":["GB-ENG","GB-WLS","GB-NIR"],"launchYear":1971,"type":"Public"},{"date":"2020-11-30","localName":"Saint Andrews Day","name":"Saint Andrews Day","countryCode":"GB","fixed":true,"global":false,"counties":["GB-SCT"],"launchYear":null,"type":"Public"},{"date":"2020-12-25","localName":"Christmas Day","name":"Christmas Day","countryCode":"GB","fixed":false,"global":true,"counties":null,"launchYear":null,"type":"Public"},{"date":"2020-12-28","localName":"Boxing Day","name":"St. Stephens Day","countryCode":"GB","fixed":false,"global":true,"counties":null,"launchYear":null,"type":"Public"}]'
+data = json.loads(data_string)
+
+# Инициализируем голос
+engine = pyttsx3.init()
+voices = engine.getProperty('voices')
+engine.setProperty('voice', voices[0].id)
+
+# Инициализируем распознование голоса
+model = vosk.Model("./vosk-model-small-ru-0.4")
+recognizer = vosk.KaldiRecognizer(model, 16000)
+
+# Инициализируем микрофон
+p = pyaudio.PyAudio()
+stream = p.open(format=pyaudio.paInt16, channels=1,
+                rate=16000, input=True, frames_per_buffer=8000)
+
+
+def recognize_speech():
+    data = stream.read(16000 * 4)
+
+    if len(data) == 0:
+        return None
+    if recognizer.AcceptWaveform(data):
+        result = recognizer.Result()
+        return result
+    else:
+        return None
+
+
+is_running = True
+while is_running:
+    engine.say("Да")
+    engine.runAndWait()
+
+    # Распознавание
+    command = recognize_speech()
+
+    # Если распознано
+    if command is not None:
+        # В нижний регистр
+        command = command.lower()
+# Флаг, если команда не найдена
+        not_found = True
+        if 'перечислить' in command:
+            text = ''
+            for item in data:
+                text += item['name'] + ' '
+            engine.say(text)
+            engine.runAndWait()
+            not_found = False
+        elif 'сохранить' in command:
+            engine.say('сохраняю')
+            engine.runAndWait()
+            with open('names.txt', 'w') as the_file:
+                for item in data:
+                    the_file.write(item['name'] + '\n')
+            not_found = False
+        elif 'даты' in command:
+            engine.say('датирую')
+            engine.runAndWait()
+            with open('dates_names.txt', 'w') as the_file:
+                for item in data:
+                    the_file.write(item['date'] + ' ' + item['name'] + '\n')
+            not_found = False
+
+        # Если команда не найдена
+        if not_found:
+            engine.say(f"Нет команды {command}")
+            engine.runAndWait()
+
+# Освобождаем память
+stream.stop_stream()
+stream.close()
+p.terminate()
